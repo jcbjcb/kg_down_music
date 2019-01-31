@@ -44,7 +44,7 @@ class Kg_music_down:
 
 
     def load_down_music(self,music):
-        print(music)
+        # print(music)
         times = int(time.time() * 1000)
         load_down_url_now = load_down_url.replace("${times}", str(times))
         load_down_url_now = load_down_url_now.replace("${hash}", music['Hash'])
@@ -65,7 +65,6 @@ class Kg_music_down:
 
         if not os.path.exists(save_path + song_name +".lrc"):
             self.save_lyrics(song_name+".lrc", lrc)
-
 
 
     def save_music(self,fileName,down_url):
