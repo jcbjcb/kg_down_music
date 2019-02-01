@@ -35,12 +35,17 @@ class Kg_music_down:
         request = requests.request("GET",url)
         pq = PyQuery(request.text)
         request.close()
-        for line in pq("script:last").text().split(';'):
-            if line.find("Hash") > 0:
-                # print(line)
-                # print(line[line.find('['):])
-                json_arr = json.loads(line[line.find('['):])
-                return json_arr
+        script_arr = pq("script")
+        for script in script_arr:
+            if pq(script).text().find("global.features") > 0:
+                song_arr_text = pq(script).text()
+                # print(song_arr_text)
+                for line in song_arr_text.split('; '):
+                    if line.find("Hash") > 0:
+                        # print(line)
+                        # print(line[line.find('['):])
+                        json_arr = json.loads(line[line.find('['):])
+                        return json_arr
 
 
     def load_down_music(self,music):
@@ -57,14 +62,22 @@ class Kg_music_down:
         # print(music_json['data']['song_name'])
         # print(music_json['data']['lyrics'])
         # print(music_json['data']['play_url'])
+        audio_name = music_json['data']['audio_name']
         song_name = music_json['data']['song_name']
         down_url = music_json['data']['play_url']
+        if down_url == "":
+            print("歌曲下载路劲不存在："+audio_name)
+            return
         lrc = music_json['data']['lyrics']
         if not os.path.exists(save_path + song_name +".mp3"):
             self.save_music(song_name+".mp3",down_url)
+        else:
+            print("已存在" + song_name+".mp3")
 
         if not os.path.exists(save_path + song_name +".lrc"):
             self.save_lyrics(song_name+".lrc", lrc)
+        else:
+            print("已存在" + song_name+".lrc")
 
 
     def save_music(self,fileName,down_url):
@@ -79,11 +92,11 @@ class Kg_music_down:
                     with open(save_path + fileName, "wb+") as f:
                         for chunk in r.iter_content(1024):
                             f.write(chunk)
-                    print("完成下载：" + fileName + ".mp3")
+                    print("完成下载：" + fileName)
                     break
             except Exception as e:
                 print(e)
-                print("下载出错：" + fileName + ".mp3，3秒后重试")
+                print("下载出错：" + fileName + "，3秒后重试")
                 if os.path.exists(save_path + fileName):
                     os.remove(save_path + fileName)
 
@@ -91,10 +104,23 @@ class Kg_music_down:
             count += 1
         pass
 
-    def save_lyrics(self,fileName,lrc):
-        with open(save_path + fileName, "w+") as f:
-                f.write(lrc)
+    def save_lyrics(self, fileName, lrc):
+        with open(save_path + fileName, "wb+") as f:
+                f.write(lrc.encode(encoding='UTF-8', errors='strict'))
         pass
+    def load_top_url(self,url):
+
+        r = requests.get(url, headers=headers, stream=True, timeout=60)
+        pq = PyQuery(r.text)
+        r.close()
+        li_arr = pq(".pc_temp_side li")
+        # print(li_arr.length)
+        arr_url = []
+        for i in range(0,li_arr.length):
+            arr_url.append(pq(li_arr[i]).find('a').attr('href'))
+
+        return arr_url
+
 
 def make_save_path(path):
     if not os.path.exists(path):
@@ -106,7 +132,9 @@ if __name__ == '__main__':
 
     kg_music_down = Kg_music_down()
 
-    pathArr = ["https://www.kugou.com/yy/rank/home/1-6666.html?from=rank"]
+    top_path = 'https://www.kugou.com/yy/html/rank.html'
+    pathArr = kg_music_down.load_top_url(top_path)
+
     for url in pathArr:
         jsonArr = kg_music_down.load_music(url)
         for music in jsonArr:
