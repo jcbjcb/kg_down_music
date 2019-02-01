@@ -105,9 +105,11 @@ class Kg_music_down:
         pass
 
     def save_lyrics(self, fileName, lrc):
-        with open(save_path + fileName, "wb+") as f:
-                f.write(lrc.encode(encoding='UTF-8', errors='strict'))
-        pass
+        try:
+            with open(save_path + fileName, "wb+") as f:
+                    f.write(lrc.encode(encoding='UTF-8', errors='strict'))
+        except Exception as e:
+            pass
     def load_top_url(self,url):
 
         r = requests.get(url, headers=headers, stream=True, timeout=60)
