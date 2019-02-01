@@ -39,13 +39,13 @@ class Kg_music_down:
         for script in script_arr:
             if pq(script).text().find("global.features") > 0:
                 song_arr_text = pq(script).text()
-                # print(song_arr_text)
-                for line in song_arr_text.split('; '):
-                    if line.find("Hash") > 0:
-                        # print(line)
-                        # print(line[line.find('['):])
-                        json_arr = json.loads(line[line.find('['):])
-                        return json_arr
+                print(song_arr_text)
+                line = song_arr_text[song_arr_text.find('global.features'):song_arr_text.find('; (function()')]
+                if line.find("Hash") > 0:
+                    print(line)
+                    # print(line[line.find('['):])
+                    json_arr = json.loads(line[line.find('['):])
+                    return json_arr
 
 
     def load_down_music(self,music):
@@ -84,7 +84,7 @@ class Kg_music_down:
         count = 0
         while count < 3:
 
-            time.sleep(3)
+            # time.sleep(3)
             try:
                 r = requests.get(down_url, headers=headers, stream=True, timeout=60)
                 # print(r.status_code)
