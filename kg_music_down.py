@@ -1,4 +1,3 @@
-
 # 酷狗音乐下载
 from pyquery import PyQuery
 import requests
@@ -14,10 +13,10 @@ import os
 # https://songsearch.kugou.com/song_search_v2?callback=jQuery112407406372213107064_1548920473506&keyword=%E4%B8%80%E8%B7%AF%E4%B9%8B%E4%B8%8B&page=1&pagesize=30&userid=-1&clientver=&platform=WebFilter&tag=em&filter=2&iscorrection=1&privilege_filter=0&_=1548920473508
 
 
-#获取下载地址
+# 获取下载地址
 load_down_url = 'https://www.kugou.com/yy/index.php?r=play/getdata&callback=jQuery19106737800324233885_${times}&hash=${hash}&album_id=${id}&_=${times}'
 
-save_path ='music/'
+save_path = 'music/'
 
 headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
            "Accept-Encoding": "gzip, deflate, br",
@@ -26,14 +25,15 @@ headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,imag
            "cookie": "kg_mid=646acf1b184ebb702871180da62a9acd; ",
            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'}
 
+
 class Kg_music_down:
 
     def __init__(self):
 
         pass
 
-    def load_music(self,url):
-        request = requests.request("GET",url)
+    def load_music(self, url):
+        request = requests.request("GET", url)
         pq = PyQuery(request.text)
         request.close()
         script_arr = pq("script")
@@ -48,8 +48,7 @@ class Kg_music_down:
                     json_arr = json.loads(line[line.find('['):])
                     return json_arr
 
-
-    def load_down_music(self,music):
+    def load_down_music(self, music, rank_title):
         # print(music)
         times = int(time.time() * 1000)
         load_down_url_now = load_down_url.replace("${times}", str(times))
@@ -70,21 +69,22 @@ class Kg_music_down:
         song_name = music_json['data']['song_name']
         down_url = music_json['data']['play_url']
         if down_url == "":
-            print("歌曲下载路劲不存在："+audio_name)
+            print("歌曲下载路劲不存在：" + audio_name)
             return
         lrc = music_json['data']['lyrics']
-        if not os.path.exists(save_path + song_name +".mp3"):
-            self.save_music(song_name+".mp3",down_url)
+        path = save_path+rank_title+"/"
+        make_save_path(path)
+        if not os.path.exists(path + song_name + ".mp3"):
+            self.save_music(song_name + ".mp3", down_url, path)
         else:
-            print("已存在" + song_name+".mp3")
+            print("已存在" + song_name + ".mp3")
 
-        if not os.path.exists(save_path + song_name +".lrc"):
-            self.save_lyrics(song_name+".lrc", lrc)
+        if not os.path.exists(path + song_name + ".lrc"):
+            self.save_lyrics(song_name + ".lrc", lrc, path)
         else:
-            print("已存在" + song_name+".lrc")
+            print("已存在" + song_name + ".lrc")
 
-
-    def save_music(self,fileName,down_url):
+    def save_music(self, fileName, down_url, path):
         count = 0
         while count < 3:
 
@@ -93,7 +93,7 @@ class Kg_music_down:
                 r = requests.get(down_url, headers=headers, stream=True, timeout=60)
                 # print(r.status_code)
                 if (r.status_code == 200):
-                    with open(save_path + fileName, "wb+") as f:
+                    with open(path + fileName, "wb+") as f:
                         for chunk in r.iter_content(1024):
                             f.write(chunk)
                     print("完成下载：" + fileName)
@@ -101,20 +101,21 @@ class Kg_music_down:
             except Exception as e:
                 print(e)
                 print("下载出错：" + fileName + "，3秒后重试")
-                if os.path.exists(save_path + fileName):
-                    os.remove(save_path + fileName)
+                if os.path.exists(path + fileName):
+                    os.remove(path + fileName)
 
                 time.sleep(3)
             count += 1
         pass
 
-    def save_lyrics(self, fileName, lrc):
+    def save_lyrics(self, fileName, lrc, path):
         try:
-            with open(save_path + fileName, "wb+") as f:
-                    f.write(lrc.encode(encoding='UTF-8', errors='strict'))
+            with open(path + fileName, "wb+") as f:
+                f.write(lrc.encode(encoding='UTF-8', errors='strict'))
         except Exception as e:
             pass
-    def load_top_url(self,url):
+
+    def load_top_url(self, url):
 
         r = requests.get(url, headers=headers, stream=True, timeout=60)
         pq = PyQuery(r.text)
@@ -122,15 +123,24 @@ class Kg_music_down:
         li_arr = pq(".pc_temp_side li")
         # print(li_arr.length)
         arr_url = []
-        for i in range(0,li_arr.length):
-            arr_url.append(pq(li_arr[i]).find('a').attr('href'))
+        for i in range(0, li_arr.length):
+            rank ={}
+            rank['url'] = pq(li_arr[i]).find('a').attr('href')
+            rank['title'] = pq(li_arr[i]).find('a').attr('title')
+            arr_url.append(rank)
 
         return arr_url
+
+    def load_page_url(self, page, page_url):
+        urls_end = page_url[page_url.find("-"):]
+        urls_start = page_url[:page_url.rfind("/") + 1]
+        return urls_start + str(page) + urls_end
 
 
 def make_save_path(path):
     if not os.path.exists(path):
         os.makedirs(path)
+
 
 if __name__ == '__main__':
 
@@ -141,8 +151,15 @@ if __name__ == '__main__':
     top_path = 'https://www.kugou.com/yy/html/rank.html'
     pathArr = kg_music_down.load_top_url(top_path)
 
-    for url in pathArr:
-        jsonArr = kg_music_down.load_music(url)
-        for music in jsonArr:
-            kg_music_down.load_down_music(music)
-            # break
+    for rank in pathArr:
+
+        for i in range(100):
+            music_url = kg_music_down.load_page_url(i + 1, rank["url"])
+            print(music_url)
+            jsonArr = kg_music_down.load_music(music_url)
+            if jsonArr:
+                for music in jsonArr:
+                    kg_music_down.load_down_music(music, rank["title"])
+                    # break
+            else:
+                break
