@@ -15,7 +15,7 @@ import os
 
 
 #获取下载地址
-load_down_url = 'https://wwwapi.kugou.com/yy/index.php?r=play/getdata&callback=jQuery19106737800324233885_${times}&hash=${hash}&album_id=${id}&_=${times}'
+load_down_url = 'https://www.kugou.com/yy/index.php?r=play/getdata&callback=jQuery19106737800324233885_${times}&hash=${hash}&album_id=${id}&_=${times}'
 
 save_path ='music/'
 
@@ -23,6 +23,7 @@ headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,imag
            "Accept-Encoding": "gzip, deflate, br",
            "Accept-Language": "zh-CN,zh;q=0.9",
            "Upgrade-Insecure-Requests": "1",
+           "cookie": "kg_mid=646acf1b184ebb702871180da62a9acd; ",
            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'}
 
 class Kg_music_down:
@@ -55,8 +56,11 @@ class Kg_music_down:
         load_down_url_now = load_down_url_now.replace("${hash}", music['Hash'])
         load_down_url_now = load_down_url_now.replace("${id}", str(music['album_id']))
         # print(load_down_url_now)
-        request = requests.request("GET", load_down_url_now)
+
+        request = requests.get(load_down_url_now, headers=headers, timeout=60)
+        # request = requests.request("GET", load_down_url_now, headers=headers)
         result_content = request.text
+        # print(result_content)
         request.close()
         music_json = json.loads(result_content[result_content.find("{"):result_content.find(");")])
         # print(music_json['data']['song_name'])
